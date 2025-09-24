@@ -1,11 +1,8 @@
 package com.lumen.awsspringbootservice.repository;
 
+import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.entity.MoviePlan;
 import com.lumen.awsspringbootservice.enums.PlanType;
-import org.junit.jupiter.api.DisplayName;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import com.lumen.awsspringbootservice.entity.Movie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

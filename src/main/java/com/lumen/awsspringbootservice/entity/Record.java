@@ -25,14 +25,17 @@ public class Record {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(nullable = false)
-    private UUID purchaseId;
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "purchase_id")
+    private Purchase purchase;
 
-    @Column(nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(nullable = false)
-    private UUID movieId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "movie_id")
+    private Movie movie;
 
     @Enumerated(EnumType.STRING)
     private PlanType planType;

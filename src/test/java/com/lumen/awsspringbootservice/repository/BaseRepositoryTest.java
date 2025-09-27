@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -28,7 +29,7 @@ public abstract class BaseRepositoryTest {
                 .title("Movie " + UUID.randomUUID())
                 .description("Some test description")
                 .premiereDate(LocalDateTime.now().minusDays(10))
-                .genres(Set.of(Genre.DRAMA, Genre.FANTASY))
+                .genres(new HashSet<>(Set.of(Genre.DRAMA, Genre.FANTASY)))
                 .s3Key("test-s3")
                 .author("author")
                 .photoUrl("https://photo.example.com")

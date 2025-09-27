@@ -1,6 +1,9 @@
 package com.lumen.awsspringbootservice.service;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
+import com.lumen.awsspringbootservice.request.MovieFilterRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 
 public interface MovieService {
@@ -30,4 +33,22 @@ public interface MovieService {
      * @throws com.lumen.awsspringbootservice.exception.NotFoundException if no movie with the given ID exists.
      */
     MovieDto updateMovie(MovieDto dto);
+
+    /**
+     * Retrieves a paginated list of movies based on the provided filter criteria.
+     * Supported filters include title, genre, and premiere date ranges.
+     *
+     * @param filter   the {@link MovieFilterRequest} containing filtering options.
+     * @param pageable the {@link Pageable} object specifying pagination and sorting parameters.
+     * @return a {@link Page} of {@link MovieDto} matching the filter criteria.
+     */
+    Page<MovieDto> getMovies(MovieFilterRequest filter, Pageable pageable);
+
+    /**
+     * Retrieves a paginated list of all movies without applying any filters.
+     *
+     * @param pageable the {@link Pageable} object specifying pagination and sorting parameters.
+     * @return a {@link Page} of all available {@link MovieDto}.
+     */
+    Page<MovieDto> getMovies(Pageable pageable);
 }

@@ -5,9 +5,14 @@ import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.repository.MovieRepository;
+import com.lumen.awsspringbootservice.request.MovieFilterRequest;
 import com.lumen.awsspringbootservice.service.MovieService;
+import com.lumen.awsspringbootservice.util.MovieSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -52,6 +57,32 @@ public class MovieServiceImpl implements MovieService {
 
         log.info("Movie successfully updated");
         return response;
+    }
+
+    public Page<MovieDto> getMovies(MovieFilterRequest filter, Pageable pageable) {
+        log.info("Fetching movies with filters: {}, page {}, size {}", filter, pageable.getPageNumber(), pageable.getPageSize());
+
+        Specification<Movie> spec = Specification.
+                allOf(MovieSpecifications.title(filter.getTitle()))
+                .and(MovieSpecifications.genre(filter.getGenre()))
+                .and(MovieSpecifications.premiereDateAfter(filter.getPremiereDateFrom()))
+                .and(MovieSpecifications.premiereDateBefore(filter.getPremiereDateTo()));
+
+        Page<MovieDto> result = movieRepository.findAll(spec, pageable)
+                .map(movieMapper::toDto);
+
+        log.info("Found {} movies", result.getTotalElements());
+        return result;
+    }
+
+    public Page<MovieDto> getMovies(Pageable pageable) {
+        log.info("Fetching movies, page {}, size {}", pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<MovieDto> result = movieRepository.findAll(pageable)
+                .map(movieMapper::toDto);
+
+        log.info("Found {} movies", result.getTotalElements());
+        return result;
     }
 
 }

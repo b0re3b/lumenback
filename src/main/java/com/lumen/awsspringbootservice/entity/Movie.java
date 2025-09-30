@@ -45,9 +45,9 @@ public class Movie {
     @Column(name = "premiere_date")
     private LocalDateTime premiereDate;
 
-    @Column(name = "s3_key")
-    private String s3Key;
+    @Column(name = "video_s3_key")
+    private String videoS3Key;
 
-    @Column(name = "photo_url")
-    private String photoUrl;
+    @Column(name = "poster_s3_key")
+    private String posterS3Key;
 }

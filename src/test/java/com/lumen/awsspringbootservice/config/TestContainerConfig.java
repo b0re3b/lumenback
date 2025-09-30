@@ -1,0 +1,15 @@
+package com.lumen.awsspringbootservice.config;
+
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.utility.DockerImageName;
+
+@TestConfiguration
+public class TestContainerConfig {
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    public LocalStackContainer localStackContainer() {
+        return new LocalStackContainer(DockerImageName
+                .parse("localstack/localstack:latest"));
+    }
+}

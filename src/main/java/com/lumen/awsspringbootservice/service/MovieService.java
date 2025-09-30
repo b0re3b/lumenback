@@ -1,9 +1,11 @@
 package com.lumen.awsspringbootservice.service;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
-import com.lumen.awsspringbootservice.request.MovieFilterRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+
+import java.io.IOException;
 
 
 public interface MovieService {
@@ -17,12 +19,15 @@ public interface MovieService {
     MovieDto getMovieById(String movieId);
 
     /**
-     * Creates a new movie along with its plans.
+     * Creates a new movie along with its associated plans and uploads
+     * related resources (e.g., poster file).
      *
-     * @param dto the {@link MovieDto} containing movie details and plans.
-     * @return the created {@link MovieDto} with generated identifier.
+     * @param request the {@link MovieCreationRequest} containing movie details,
+     *                plans, and poster file.
+     * @return the created {@link MovieDto} with a generated identifier.
+     * @throws IOException if reading or uploading the poster file fails.
      */
-    MovieDto createMovie(MovieDto dto);
+    MovieDto createMovie(MovieCreationRequest request) throws IOException;
 
     /**
      * Updates an existing movie and its related entities.
@@ -35,20 +40,22 @@ public interface MovieService {
     MovieDto updateMovie(MovieDto dto);
 
     /**
-     * Retrieves a paginated list of movies based on the provided filter criteria.
-     * Supported filters include title, genre, and premiere date ranges.
+     * Retrieves a paginated list of movies filtered by the given criteria.
      *
-     * @param filter   the {@link MovieFilterRequest} containing filtering options.
-     * @param pageable the {@link Pageable} object specifying pagination and sorting parameters.
+     * @param filter the {@link MovieFiltersRequest} containing optional filters
+     *               such as title, genre, or premiere date range.
+     * @param page   the page number (1-based).
+     * @param size   the number of items per page.
      * @return a {@link Page} of {@link MovieDto} matching the filter criteria.
      */
-    Page<MovieDto> getMovies(MovieFilterRequest filter, Pageable pageable);
+    Page<MovieDto> getMovies(MovieFiltersRequest filter, int page, int size);
 
     /**
-     * Retrieves a paginated list of all movies without applying any filters.
+     * Retrieves a paginated list of all movies without filters.
      *
-     * @param pageable the {@link Pageable} object specifying pagination and sorting parameters.
-     * @return a {@link Page} of all available {@link MovieDto}.
+     * @param page the page number (1-based).
+     * @param size the number of items per page.
+     * @return a {@link Page} of {@link MovieDto} containing all movies.
      */
-    Page<MovieDto> getMovies(Pageable pageable);
+    Page<MovieDto> getMovies(int page, int size);
 }

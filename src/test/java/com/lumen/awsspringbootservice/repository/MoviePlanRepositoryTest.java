@@ -1,17 +1,15 @@
 package com.lumen.awsspringbootservice.repository;
 
+import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.entity.MoviePlan;
 import com.lumen.awsspringbootservice.enums.PlanType;
-import org.junit.jupiter.api.DisplayName;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import com.lumen.awsspringbootservice.entity.Movie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -19,9 +17,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(properties = {
-        "spring.profiles.active=test"
-})
+@DataJpaTest
+@ActiveProfiles("test")
 @DisplayName("MovieRepository Integration Tests")
 class MoviePlanRepositoryTest extends BaseRepositoryTest {
 

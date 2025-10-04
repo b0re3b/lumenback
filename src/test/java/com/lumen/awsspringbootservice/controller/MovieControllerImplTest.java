@@ -1,4 +1,4 @@
-package com.lumen.awsspringbootservice.mapper;
+package com.lumen.awsspringbootservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lumen.awsspringbootservice.controller.impl.MovieControllerImpl;
@@ -10,6 +10,7 @@ import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieResponse;
 import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.enums.PlanType;
+import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.service.MovieService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

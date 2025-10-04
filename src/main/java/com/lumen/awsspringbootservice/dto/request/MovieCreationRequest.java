@@ -48,7 +48,7 @@ public class MovieCreationRequest {
     private List<@Valid MoviePlanShortDto> moviePlanShortDtoList = new ArrayList<>();
 
     @NotNull(message = "Premiere date is required")
-    @FutureOrPresent(message = "Premiere date cannot be in the past")
+    @Future(message = "Premiere date cannot be in the past")
     @Schema(description = "Premiere date of the movie", example = "2025-12-15T20:00:00")
     private LocalDateTime premiereDate;
 

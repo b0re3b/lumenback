@@ -8,8 +8,10 @@ import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieResponse;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.service.MovieService;
+import com.lumen.awsspringbootservice.validator.annotation.ValidImageFile;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -60,7 +62,7 @@ public class MovieControllerImpl implements MovieController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<MovieDetailsResponse> createMovie(
             @RequestPart("request") @Valid MovieCreationRequest request,
-            @RequestPart("posterFile") MultipartFile posterFile
+            @RequestPart("posterFile") @NotNull @ValidImageFile MultipartFile posterFile
     ) throws IOException {
         request.setPosterFile(posterFile);
         return ResponseEntity.status(HttpStatus.CREATED).body(

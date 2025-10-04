@@ -5,6 +5,7 @@ import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
 import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieResponse;
+import com.lumen.awsspringbootservice.validator.annotation.ValidImageFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -92,6 +94,6 @@ public interface MovieController {
                     content = @Content(schema = @Schema(implementation = MovieCreationRequest.class))
             )
             @RequestPart("request") @Valid MovieCreationRequest request,
-            @RequestPart("posterFile") MultipartFile posterFile
+            @RequestPart("posterFile") @NotNull @ValidImageFile MultipartFile posterFile
     ) throws IOException;
 }

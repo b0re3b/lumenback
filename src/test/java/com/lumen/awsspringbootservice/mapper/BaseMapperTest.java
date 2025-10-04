@@ -2,11 +2,13 @@ package com.lumen.awsspringbootservice.mapper;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
 import com.lumen.awsspringbootservice.dto.movie.MoviePlanShortDto;
+import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.entity.MoviePlan;
 import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.enums.PlanType;
 import org.junit.jupiter.api.DisplayName;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,8 +26,8 @@ public abstract class BaseMapperTest {
                 .description("Some test description")
                 .premiereDate(LocalDateTime.now().minusDays(10))
                 .genres(Set.of(Genre.DRAMA, Genre.FANTASY))
-                .s3Key("test-s3-key")
-                .photoUrl("https://photo.example.com/movie.jpg")
+                .videoS3Key("video-s3-key")
+                .posterS3Key("poster-s3-key")
                 .moviePlans(List.of(buildMoviePlanEntity(null, PlanType.WEEK)))
                 .build();
     }
@@ -47,8 +49,8 @@ public abstract class BaseMapperTest {
                 .description("DTO test description")
                 .premiereDate(LocalDateTime.now().minusDays(5))
                 .genres(Set.of(Genre.FANTASY))
-                .s3Key("dto-s3-key")
-                .photoUrl("https://photo.example.com/dto.jpg")
+                .videoS3Key("video-s3-key")
+                .posterS3Key("poster-s3-key")
                 .moviePlanShortDtoList(List.of(buildMoviePlanShortDto(PlanType.MONTH)))
                 .build();
     }
@@ -58,6 +60,16 @@ public abstract class BaseMapperTest {
                 .id(UUID.randomUUID().toString())
                 .type(type)
                 .price(new BigDecimal("19.99"))
+                .build();
+    }
+
+    protected MovieCreationRequest buildMovieCreationRequest(PlanType type) {
+        return MovieCreationRequest.builder()
+                .author("Author_" + UUID.randomUUID())
+                .title("Movie Request " + UUID.randomUUID())
+                .description("Request description")
+                .posterFile(new MockMultipartFile("movie", "request.jpg", "image/jpeg", "movie".getBytes()))
+                .moviePlanShortDtoList(List.of(buildMoviePlanShortDto(type)))
                 .build();
     }
 }

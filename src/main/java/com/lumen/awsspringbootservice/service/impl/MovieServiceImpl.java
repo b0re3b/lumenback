@@ -1,20 +1,24 @@
 package com.lumen.awsspringbootservice.service.impl;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
+import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.repository.MovieRepository;
-import com.lumen.awsspringbootservice.request.MovieFilterRequest;
+import com.lumen.awsspringbootservice.repository.S3MoviePosterRepository;
 import com.lumen.awsspringbootservice.service.MovieService;
 import com.lumen.awsspringbootservice.util.MovieSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @Service
@@ -26,6 +30,8 @@ public class MovieServiceImpl implements MovieService {
 
     private final MovieMapper movieMapper;
 
+    private final S3MoviePosterRepository s3MoviePosterRepository;
+
     public MovieDto getMovieById(String movieId) {
         log.info("Fetching movie by id: {}", movieId);
         MovieDto dto = movieMapper.toDto(movieRepository
@@ -36,9 +42,15 @@ public class MovieServiceImpl implements MovieService {
         return dto;
     }
 
-    public MovieDto createMovie(MovieDto dto) {
-        log.info("Creating new movie: {}", dto);
-        Movie entity = movieMapper.toEntity(dto);
+    @Transactional
+    public MovieDto createMovie(MovieCreationRequest request) throws IOException {
+        log.info("Creating new movie: {}", request);
+
+        Movie entity = movieRepository.save(movieMapper.toEntity(request));
+
+        String posterS3Key = s3MoviePosterRepository.uploadFile(entity.getId().toString(), request.getPosterFile());
+
+        entity.setPosterS3Key(posterS3Key);
 
         MovieDto response = movieMapper.toDto(movieRepository.save(entity));
 
@@ -59,8 +71,8 @@ public class MovieServiceImpl implements MovieService {
         return response;
     }
 
-    public Page<MovieDto> getMovies(MovieFilterRequest filter, Pageable pageable) {
-        log.info("Fetching movies with filters: {}, page {}, size {}", filter, pageable.getPageNumber(), pageable.getPageSize());
+    public Page<MovieDto> getMovies(MovieFiltersRequest filter, int pageNumber, int pageSize) {
+        log.info("Fetching movies with filters: {}, page {}, size {}", filter, pageNumber, pageSize);
 
         Specification<Movie> spec = Specification.
                 allOf(MovieSpecifications.title(filter.getTitle()))
@@ -68,17 +80,17 @@ public class MovieServiceImpl implements MovieService {
                 .and(MovieSpecifications.premiereDateAfter(filter.getPremiereDateFrom()))
                 .and(MovieSpecifications.premiereDateBefore(filter.getPremiereDateTo()));
 
-        Page<MovieDto> result = movieRepository.findAll(spec, pageable)
+        Page<MovieDto> result = movieRepository.findAll(spec, PageRequest.of(pageNumber, pageSize))
                 .map(movieMapper::toDto);
 
         log.info("Found {} movies", result.getTotalElements());
         return result;
     }
 
-    public Page<MovieDto> getMovies(Pageable pageable) {
-        log.info("Fetching movies, page {}, size {}", pageable.getPageNumber(), pageable.getPageSize());
+    public Page<MovieDto> getMovies(int pageNumber, int pageSize) {
+        log.info("Fetching movies, page {}, size {}", pageNumber, pageSize);
 
-        Page<MovieDto> result = movieRepository.findAll(pageable)
+        Page<MovieDto> result = movieRepository.findAll(PageRequest.of(pageNumber, pageSize))
                 .map(movieMapper::toDto);
 
         log.info("Found {} movies", result.getTotalElements());

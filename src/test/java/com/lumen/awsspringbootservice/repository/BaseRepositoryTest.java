@@ -30,9 +30,9 @@ public abstract class BaseRepositoryTest {
                 .description("Some test description")
                 .premiereDate(LocalDateTime.now().minusDays(10))
                 .genres(new HashSet<>(Set.of(Genre.DRAMA, Genre.FANTASY)))
-                .s3Key("test-s3")
+                .videoS3Key("video-s3-key")
+                .posterS3Key("poster-s3-key")
                 .author("author")
-                .photoUrl("https://photo.example.com")
                 .build();
     }
 

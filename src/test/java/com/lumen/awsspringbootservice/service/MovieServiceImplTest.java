@@ -1,11 +1,13 @@
 package com.lumen.awsspringbootservice.service;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
+import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.repository.MovieRepository;
-import com.lumen.awsspringbootservice.request.MovieFilterRequest;
+import com.lumen.awsspringbootservice.repository.S3MoviePosterRepository;
 import com.lumen.awsspringbootservice.service.impl.MovieServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +40,10 @@ class MovieServiceImplTest {
 
     @Mock
     private MovieMapper movieMapper;
+
+    @Mock
+    private S3MoviePosterRepository s3MoviePosterRepository;
+
 
     @InjectMocks
     private MovieServiceImpl movieService;
@@ -83,24 +90,25 @@ class MovieServiceImplTest {
 
         @Test
         @DisplayName("Should save and return MovieDto")
-        void shouldSaveAndReturnMovieDto() {
+        void shouldSaveAndReturnMovieDto() throws IOException {
             // given
-            MovieDto dto = new MovieDto();
-            Movie entity = new Movie();
-            Movie savedEntity = new Movie();
+            MovieCreationRequest request = new MovieCreationRequest();
+            Movie entity = Movie.builder().id(UUID.randomUUID()).build();
+            Movie savedEntity = Movie.builder().id(UUID.randomUUID()).build();
             MovieDto savedDto = new MovieDto();
 
-            when(movieMapper.toEntity(dto)).thenReturn(entity);
-            when(movieRepository.save(entity)).thenReturn(savedEntity);
+            when(movieMapper.toEntity(request)).thenReturn(entity);
+            when(movieRepository.save(any())).thenReturn(savedEntity);
             when(movieMapper.toDto(savedEntity)).thenReturn(savedDto);
+            when(s3MoviePosterRepository.uploadFile(any(), any())).thenReturn("key");
 
             // when
-            MovieDto result = movieService.createMovie(dto);
+            MovieDto result = movieService.createMovie(request);
 
             // then
             assertNotNull(result);
             assertEquals(savedDto, result);
-            verify(movieMapper).toEntity(dto);
+            verify(movieMapper).toEntity(request);
             verify(movieRepository).save(entity);
             verify(movieMapper).toDto(savedEntity);
         }
@@ -163,7 +171,7 @@ class MovieServiceImplTest {
         @DisplayName("Should return movies page when filter applied")
         void shouldReturnMoviesWithFilter() {
             // given
-            MovieFilterRequest filter = new MovieFilterRequest();
+            MovieFiltersRequest filter = new MovieFiltersRequest();
             filter.setTitle("test");
 
             Movie entity = new Movie();
@@ -180,7 +188,7 @@ class MovieServiceImplTest {
             when(movieMapper.toDto(entity)).thenReturn(dto);
 
             // when
-            Page<MovieDto> result = movieService.getMovies(filter, pageable);
+            Page<MovieDto> result = movieService.getMovies(filter, pageable.getPageNumber(), pageable.getPageSize());
 
             // then
             assertNotNull(result);
@@ -213,7 +221,7 @@ class MovieServiceImplTest {
             when(movieMapper.toDto(entity)).thenReturn(dto);
 
             // when
-            Page<MovieDto> result = movieService.getMovies(pageable);
+            Page<MovieDto> result = movieService.getMovies(pageable.getPageNumber(), pageable.getPageSize());
 
             // then
             assertNotNull(result);

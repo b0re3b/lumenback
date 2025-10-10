@@ -3,8 +3,10 @@ package com.lumen.awsspringbootservice.controller;
 import com.lumen.awsspringbootservice.dto.PageResponse;
 import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
 import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieResponse;
+import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
 import com.lumen.awsspringbootservice.validator.annotation.ValidImageFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -96,4 +98,62 @@ public interface MovieController {
             @RequestPart("request") @Valid MovieCreationRequest request,
             @RequestPart("posterFile") @NotNull @ValidImageFile MultipartFile posterFile
     ) throws IOException;
+
+    @Operation(
+            summary = "Generate pre-signed upload URLs for video fragments",
+            description = """
+                    Generates pre-signed S3 PUT URLs for uploading HLS video fragments 
+                    and the main manifest (.m3u8). 
+                    If previous video content exists, it will be removed from S3 
+                    before new URLs are generated.""",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully generated pre-signed upload URLs",
+                            content = @Content(schema = @Schema(implementation = MovieUploadUrlsResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Invalid upload request"),
+                    @ApiResponse(responseCode = "404", description = "Movie not found")
+            }
+    )
+    @PutMapping(path = "/{id}")
+    ResponseEntity<MovieUploadUrlsResponse> createMovieUploadUrls(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Request payload containing manifest content and fragment information",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = MovieUploadUrlsRequest.class))
+            )
+            @RequestBody @Valid MovieUploadUrlsRequest request,
+
+            @Parameter(description = "Unique movie ID", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable("id") String id
+    );
+
+    @Operation(
+            summary = "Get pre-signed video playback manifest",
+            description = """
+                    Returns a dynamically generated HLS (.m3u8) manifest that includes 
+                    pre-signed S3 GET URLs for all uploaded video fragments.
+                    This endpoint is typically used by the video player to begin streaming.""",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully generated and returned HLS manifest",
+                            content = @Content(
+                                    mediaType = "application/vnd.apple.mpegurl",
+                                    schema = @Schema(type = "string", example = "#EXTM3U\\n#EXTINF:10.0,\\nhttps://s3.amazonaws.com/.../0.ts\\n#EXT-X-ENDLIST")
+                            )
+                    ),
+                    @ApiResponse(responseCode = "404", description = "Movie not found"),
+                    @ApiResponse(responseCode = "409", description = "Movie has no uploaded video fragments")
+            }
+    )
+    @GetMapping(path = "/{id}/video-url", produces = "application/vnd.apple.mpegurl")
+    ResponseEntity<String> getMovieVideoUrl(
+            @Parameter(description = "Unique movie ID", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable("id") String id
+    );
+
 }

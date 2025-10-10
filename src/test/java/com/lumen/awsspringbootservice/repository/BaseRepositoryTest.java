@@ -9,9 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @DisplayName("MovieRepository Integration Tests")
 public abstract class BaseRepositoryTest {
@@ -30,7 +28,7 @@ public abstract class BaseRepositoryTest {
                 .description("Some test description")
                 .premiereDate(LocalDateTime.now().minusDays(10))
                 .genres(new HashSet<>(Set.of(Genre.DRAMA, Genre.FANTASY)))
-                .videoS3Key("video-s3-key")
+                .videoFragments(new LinkedHashMap<>(Map.of("video-s3-key", "10.0")))
                 .posterS3Key("poster-s3-key")
                 .author("author")
                 .build();

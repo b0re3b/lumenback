@@ -4,15 +4,19 @@ import com.lumen.awsspringbootservice.controller.MovieController;
 import com.lumen.awsspringbootservice.dto.PageResponse;
 import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
 import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieResponse;
+import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.service.MovieService;
 import com.lumen.awsspringbootservice.validator.annotation.ValidImageFile;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -70,5 +74,27 @@ public class MovieControllerImpl implements MovieController {
                         movieService.createMovie(request)
                 )
         );
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<MovieUploadUrlsResponse> createMovieUploadUrls(
+            @RequestBody @Valid MovieUploadUrlsRequest request,
+            @PathVariable("id") String id
+    ) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                movieService.createMovieUploadUrls(id, request)
+        );
+    }
+
+    @GetMapping("/{id}/video-url")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> getMovieVideoUrl(
+            @PathVariable("id") String id
+    ) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl")
+                .body(movieService.getMovieVideoUrl(id)
+                );
     }
 }

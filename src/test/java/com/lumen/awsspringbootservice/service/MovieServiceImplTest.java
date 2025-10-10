@@ -3,11 +3,13 @@ package com.lumen.awsspringbootservice.service;
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
 import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.repository.MovieRepository;
 import com.lumen.awsspringbootservice.repository.S3MoviePosterRepository;
+import com.lumen.awsspringbootservice.repository.S3MovieVideoRepository;
 import com.lumen.awsspringbootservice.service.impl.MovieServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,14 +24,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MovieServiceImpl Unit Tests")
@@ -43,6 +42,9 @@ class MovieServiceImplTest {
 
     @Mock
     private S3MoviePosterRepository s3MoviePosterRepository;
+
+    @Mock
+    private S3MovieVideoRepository s3MovieVideoRepository;
 
 
     @InjectMocks
@@ -230,6 +232,122 @@ class MovieServiceImplTest {
 
             verify(movieRepository).findAll(pageable);
             verify(movieMapper).toDto(entity);
+        }
+    }
+
+    @Nested
+    @DisplayName("createMovieUploadUrls Tests")
+    class CreateMovieUploadUrlsTests {
+
+        @Test
+        @DisplayName("Should generate upload URLs and persist manifest/fragments when previous video data is empty")
+        void shouldGenerateUploadUrlsAndPersistVideoData() {
+            // given
+            UUID movieId = UUID.randomUUID();
+            String movieIdStr = movieId.toString();
+
+            Movie movie = new Movie();
+            movie.setId(movieId);
+            movie.setVideoManifestS3Key(null);
+            movie.setVideoFragments(new LinkedHashMap<>());
+
+            String manifestContent = """
+                    #EXTM3U
+                    #EXT-X-VERSION:3
+                    #EXTINF:10.0,
+                    0.ts
+                    #EXTINF:12.5,
+                    1.ts
+                    #EXT-X-ENDLIST
+                    """;
+
+            MovieUploadUrlsRequest request = new MovieUploadUrlsRequest();
+            request.setManifestContent(manifestContent);
+
+            final java.util.List<String> generatedKeysHolder = new java.util.ArrayList<>();
+
+            String manifestKey = "videos/" + movieIdStr + "/index.m3u8";
+
+            when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
+            when(s3MovieVideoRepository.generateManifestKey(movieIdStr)).thenReturn(manifestKey);
+            when(s3MovieVideoRepository.generateFragmentKeys(eq(movieIdStr), anyInt()))
+                    .thenAnswer(inv -> {
+                        int count = inv.getArgument(1, Integer.class);
+                        java.util.List<String> keys = new java.util.ArrayList<>();
+                        for (int i = 0; i < count; i++) {
+                            keys.add("videos/" + movieIdStr + "/" + i + ".ts");
+                        }
+                        generatedKeysHolder.clear();
+                        generatedKeysHolder.addAll(keys);
+                        return keys;
+                    });
+            when(s3MovieVideoRepository.generatePutPresignedUrl(any()))
+                    .thenAnswer(inv -> "https://presign-put/" + inv.getArgument(0, String.class));
+
+            // when
+            var response = movieService.createMovieUploadUrls(movieIdStr, request);
+
+            // then
+            assertNotNull(response);
+            assertEquals(movieIdStr, response.getMovieId());
+            assertNotNull(response.getMainManifestUrl());
+            assertTrue(response.getMainManifestUrl().startsWith("https://presign-put/"));
+            assertEquals(2, response.getSegmentsUrls().size());
+            for (String key : generatedKeysHolder) {
+                verify(s3MovieVideoRepository).generatePutPresignedUrl(key);
+            }
+            assertEquals(manifestKey, movie.getVideoManifestS3Key());
+            assertEquals(generatedKeysHolder, new java.util.ArrayList<>(movie.getVideoFragments().keySet()));
+            assertEquals(java.util.List.of("10.0", "12.5"),
+                    new java.util.ArrayList<>(movie.getVideoFragments().values()));
+
+            verify(movieRepository).save(movie);
+        }
+
+        @Test
+        @DisplayName("Should delete old video data before generating new URLs")
+        void shouldDeleteOldVideoDataBeforeGeneratingNewUrls() {
+            // given
+            UUID movieId = UUID.randomUUID();
+            String movieIdStr = movieId.toString();
+
+            Movie movie = new Movie();
+            movie.setId(movieId);
+            movie.setVideoManifestS3Key("old/index.m3u8");
+            movie.setVideoFragments(new LinkedHashMap<>(Map.of("old/0.ts", "10.0")));
+
+            MovieUploadUrlsRequest request = new MovieUploadUrlsRequest();
+            request.setManifestContent("#EXTM3U\n#EXT-X-ENDLIST\n");
+
+            when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
+            when(s3MovieVideoRepository.generateManifestKey(movieIdStr)).thenReturn("new/index.m3u8");
+            when(s3MovieVideoRepository.generateFragmentKeys(eq(movieIdStr), anyInt()))
+                    .thenAnswer(inv -> java.util.Collections.<String>emptyList());
+            when(s3MovieVideoRepository.generatePutPresignedUrl(any()))
+                    .thenAnswer(inv -> "https://presign-put/" + inv.getArgument(0, String.class));
+
+            // when
+            movieService.createMovieUploadUrls(movieIdStr, request);
+
+            verify(s3MovieVideoRepository).deleteObject("old/index.m3u8");
+            verify(s3MovieVideoRepository).deleteObject("old/0.ts");
+
+            assertEquals("new/index.m3u8", movie.getVideoManifestS3Key());
+            assertTrue(movie.getVideoFragments().isEmpty());
+
+            verify(movieRepository, times(2)).save(movie);
+        }
+
+        @Test
+        @DisplayName("Should throw NotFoundException when movie not found")
+        void shouldThrowNotFoundWhenMovieNotFound() {
+            // given
+            UUID movieId = UUID.randomUUID();
+            when(movieRepository.findById(movieId)).thenReturn(Optional.empty());
+
+            // then
+            assertThrows(NotFoundException.class,
+                    () -> movieService.createMovieUploadUrls(movieId.toString(), new MovieUploadUrlsRequest()));
         }
     }
 }

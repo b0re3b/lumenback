@@ -28,7 +28,7 @@ public abstract class BaseRepositoryTest {
                 .description("Some test description")
                 .premiereDate(LocalDateTime.now().minusDays(10))
                 .genres(new HashSet<>(Set.of(Genre.DRAMA, Genre.FANTASY)))
-                .videoFragments(new LinkedHashMap<>(Map.of("video-s3-key", "10.0")))
+                .videoFragments(new ArrayList<>(List.of(new Movie.VideoFragment("video-s3-key", "10.0"))))
                 .posterS3Key("poster-s3-key")
                 .author("author")
                 .build();

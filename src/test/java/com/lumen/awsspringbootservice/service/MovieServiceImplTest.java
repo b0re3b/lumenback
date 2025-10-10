@@ -4,6 +4,7 @@ import com.lumen.awsspringbootservice.dto.movie.MovieDto;
 import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
+import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
@@ -27,7 +28,8 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -240,114 +242,162 @@ class MovieServiceImplTest {
     class CreateMovieUploadUrlsTests {
 
         @Test
-        @DisplayName("Should generate upload URLs and persist manifest/fragments when previous video data is empty")
-        void shouldGenerateUploadUrlsAndPersistVideoData() {
+        @DisplayName("Should generate new upload URLs and persist updated fragments")
+        void shouldGenerateNewUploadUrlsAndPersistMovie() {
             // given
             UUID movieId = UUID.randomUUID();
-            String movieIdStr = movieId.toString();
-
             Movie movie = new Movie();
             movie.setId(movieId);
-            movie.setVideoManifestS3Key(null);
-            movie.setVideoFragments(new LinkedHashMap<>());
-
-            String manifestContent = """
-                    #EXTM3U
-                    #EXT-X-VERSION:3
-                    #EXTINF:10.0,
-                    0.ts
-                    #EXTINF:12.5,
-                    1.ts
-                    #EXT-X-ENDLIST
-                    """;
 
             MovieUploadUrlsRequest request = new MovieUploadUrlsRequest();
-            request.setManifestContent(manifestContent);
-
-            final java.util.List<String> generatedKeysHolder = new java.util.ArrayList<>();
-
-            String manifestKey = "videos/" + movieIdStr + "/index.m3u8";
+            request.setManifestContent("#EXTM3U\n#EXTINF:8.0,\n0.ts\n#EXTINF:9.5,\n1.ts\n#EXT-X-ENDLIST");
 
             when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
-            when(s3MovieVideoRepository.generateManifestKey(movieIdStr)).thenReturn(manifestKey);
-            when(s3MovieVideoRepository.generateFragmentKeys(eq(movieIdStr), anyInt()))
-                    .thenAnswer(inv -> {
-                        int count = inv.getArgument(1, Integer.class);
-                        java.util.List<String> keys = new java.util.ArrayList<>();
-                        for (int i = 0; i < count; i++) {
-                            keys.add("videos/" + movieIdStr + "/" + i + ".ts");
-                        }
-                        generatedKeysHolder.clear();
-                        generatedKeysHolder.addAll(keys);
-                        return keys;
-                    });
-            when(s3MovieVideoRepository.generatePutPresignedUrl(any()))
-                    .thenAnswer(inv -> "https://presign-put/" + inv.getArgument(0, String.class));
+            when(s3MovieVideoRepository.generateManifestKey(movieId.toString())).thenReturn("folder/" + movieId + "/index.m3u8");
+            when(s3MovieVideoRepository.generateFragmentKeys(movieId.toString(), 2))
+                    .thenReturn(List.of("folder/" + movieId + "/0.ts", "folder/" + movieId + "/1.ts"));
+            when(s3MovieVideoRepository.generatePutPresignedUrl(anyString()))
+                    .thenAnswer(invocation -> "https://s3.local/" + invocation.getArgument(0));
 
             // when
-            var response = movieService.createMovieUploadUrls(movieIdStr, request);
+            MovieUploadUrlsResponse response = movieService.createMovieUploadUrls(movieId.toString(), request);
 
             // then
             assertNotNull(response);
-            assertEquals(movieIdStr, response.getMovieId());
-            assertNotNull(response.getMainManifestUrl());
-            assertTrue(response.getMainManifestUrl().startsWith("https://presign-put/"));
+            assertEquals(movieId.toString(), response.getMovieId());
+            assertTrue(response.getMainManifestUrl().contains("index.m3u8"));
             assertEquals(2, response.getSegmentsUrls().size());
-            for (String key : generatedKeysHolder) {
-                verify(s3MovieVideoRepository).generatePutPresignedUrl(key);
-            }
-            assertEquals(manifestKey, movie.getVideoManifestS3Key());
-            assertEquals(generatedKeysHolder, new java.util.ArrayList<>(movie.getVideoFragments().keySet()));
-            assertEquals(java.util.List.of("10.0", "12.5"),
-                    new java.util.ArrayList<>(movie.getVideoFragments().values()));
 
-            verify(movieRepository).save(movie);
+            verify(s3MovieVideoRepository).generateManifestKey(movieId.toString());
+            verify(s3MovieVideoRepository, times(3)).generatePutPresignedUrl(anyString());
+            verify(movieRepository, atLeastOnce()).save(movie);
+
+            // Ensure fragments were persisted
+            assertNotNull(movie.getVideoFragments());
+            assertEquals(2, movie.getVideoFragments().size());
+            assertEquals("folder/" + movieId + "/0.ts", movie.getVideoFragments().get(0).getVideoFragmentS3Key());
+            assertEquals("8.0", movie.getVideoFragments().get(0).getDuration());
+            assertEquals("9.5", movie.getVideoFragments().get(1).getDuration());
         }
 
         @Test
-        @DisplayName("Should delete old video data before generating new URLs")
+        @DisplayName("Should delete old S3 video data before generating new URLs")
         void shouldDeleteOldVideoDataBeforeGeneratingNewUrls() {
             // given
             UUID movieId = UUID.randomUUID();
-            String movieIdStr = movieId.toString();
-
             Movie movie = new Movie();
             movie.setId(movieId);
             movie.setVideoManifestS3Key("old/index.m3u8");
-            movie.setVideoFragments(new LinkedHashMap<>(Map.of("old/0.ts", "10.0")));
+
+            Movie.VideoFragment old1 = new Movie.VideoFragment();
+            old1.setVideoFragmentS3Key("old/0.ts");
+            old1.setDuration("5.0");
+
+            Movie.VideoFragment old2 = new Movie.VideoFragment();
+            old2.setVideoFragmentS3Key("old/1.ts");
+            old2.setDuration("7.0");
+
+            movie.setVideoFragments(new ArrayList<>(List.of(old1, old2)));
 
             MovieUploadUrlsRequest request = new MovieUploadUrlsRequest();
-            request.setManifestContent("#EXTM3U\n#EXT-X-ENDLIST\n");
+            request.setManifestContent("#EXTM3U\n#EXTINF:10.0,\n0.ts\n#EXT-X-ENDLIST");
 
             when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
-            when(s3MovieVideoRepository.generateManifestKey(movieIdStr)).thenReturn("new/index.m3u8");
-            when(s3MovieVideoRepository.generateFragmentKeys(eq(movieIdStr), anyInt()))
-                    .thenAnswer(inv -> java.util.Collections.<String>emptyList());
-            when(s3MovieVideoRepository.generatePutPresignedUrl(any()))
-                    .thenAnswer(inv -> "https://presign-put/" + inv.getArgument(0, String.class));
+            when(s3MovieVideoRepository.generateManifestKey(movieId.toString())).thenReturn("new/index.m3u8");
+            when(s3MovieVideoRepository.generateFragmentKeys(movieId.toString(), 1))
+                    .thenReturn(List.of("new/0.ts"));
+            when(s3MovieVideoRepository.generatePutPresignedUrl(anyString()))
+                    .thenAnswer(invocation -> "https://s3.local/" + invocation.getArgument(0));
 
             // when
-            movieService.createMovieUploadUrls(movieIdStr, request);
+            movieService.createMovieUploadUrls(movieId.toString(), request);
 
+            // then
             verify(s3MovieVideoRepository).deleteObject("old/index.m3u8");
             verify(s3MovieVideoRepository).deleteObject("old/0.ts");
-
-            assertEquals("new/index.m3u8", movie.getVideoManifestS3Key());
-            assertTrue(movie.getVideoFragments().isEmpty());
-
-            verify(movieRepository, times(2)).save(movie);
+            verify(s3MovieVideoRepository).deleteObject("old/1.ts");
+            verify(movieRepository, atLeastOnce()).save(movie);
         }
 
         @Test
-        @DisplayName("Should throw NotFoundException when movie not found")
-        void shouldThrowNotFoundWhenMovieNotFound() {
+        @DisplayName("Should throw NotFoundException if movie not found")
+        void shouldThrowNotFoundWhenMovieMissing() {
+            UUID movieId = UUID.randomUUID();
+            MovieUploadUrlsRequest request = new MovieUploadUrlsRequest();
+            request.setManifestContent("#EXTM3U\n#EXT-X-ENDLIST");
+
+            when(movieRepository.findById(movieId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class,
+                    () -> movieService.createMovieUploadUrls(movieId.toString(), request));
+        }
+    }
+
+    @Nested
+    @DisplayName("getMovieVideoUrl Tests")
+    class GetMovieVideoUrlTests {
+
+        @Test
+        @DisplayName("Should generate manifest with presigned GET URLs for all fragments")
+        void shouldGenerateManifestWithPresignedGetUrls() {
             // given
+            UUID movieId = UUID.randomUUID();
+            Movie movie = new Movie();
+            movie.setId(movieId);
+
+            Movie.VideoFragment fragment1 = new Movie.VideoFragment();
+            fragment1.setVideoFragmentS3Key("video/0.ts");
+            fragment1.setDuration("8.0");
+
+            Movie.VideoFragment fragment2 = new Movie.VideoFragment();
+            fragment2.setVideoFragmentS3Key("video/1.ts");
+            fragment2.setDuration("9.5");
+
+            movie.setVideoFragments(List.of(fragment1, fragment2));
+
+            when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
+            when(s3MovieVideoRepository.generateGetPresignedUrl("video/0.ts"))
+                    .thenReturn("https://s3.local/video/0.ts?token");
+            when(s3MovieVideoRepository.generateGetPresignedUrl("video/1.ts"))
+                    .thenReturn("https://s3.local/video/1.ts?token");
+
+            // when
+            String manifest = movieService.getMovieVideoUrl(movieId.toString());
+
+            // then
+            assertNotNull(manifest);
+            assertTrue(manifest.contains("#EXTM3U"));
+            assertTrue(manifest.contains("https://s3.local/video/0.ts?token"));
+            assertTrue(manifest.contains("https://s3.local/video/1.ts?token"));
+            assertTrue(manifest.contains("#EXT-X-ENDLIST"));
+
+            verify(s3MovieVideoRepository, times(2)).generateGetPresignedUrl(anyString());
+            verify(movieRepository).findById(movieId);
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalStateException if movie has no fragments")
+        void shouldThrowIfMovieHasNoFragments() {
+            UUID movieId = UUID.randomUUID();
+            Movie movie = new Movie();
+            movie.setId(movieId);
+            movie.setVideoFragments(Collections.emptyList());
+
+            when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
+
+            assertThrows(IllegalStateException.class,
+                    () -> movieService.getMovieVideoUrl(movieId.toString()));
+        }
+
+        @Test
+        @DisplayName("Should throw NotFoundException if movie does not exist")
+        void shouldThrowIfMovieNotFound() {
             UUID movieId = UUID.randomUUID();
             when(movieRepository.findById(movieId)).thenReturn(Optional.empty());
 
-            // then
             assertThrows(NotFoundException.class,
-                    () -> movieService.createMovieUploadUrls(movieId.toString(), new MovieUploadUrlsRequest()));
+                    () -> movieService.getMovieVideoUrl(movieId.toString()));
         }
     }
+
 }

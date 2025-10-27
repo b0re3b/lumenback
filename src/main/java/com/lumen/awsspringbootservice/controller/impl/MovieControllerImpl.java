@@ -8,8 +8,10 @@ import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
 import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieResponse;
 import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.dto.response.purchase.CreatePaymentSessionResponse;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.service.MovieService;
+import com.lumen.awsspringbootservice.service.PurchaseService;
 import com.lumen.awsspringbootservice.validator.annotation.ValidImageFile;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
@@ -33,6 +35,8 @@ public class MovieControllerImpl implements MovieController {
     private final MovieService movieService;
 
     private final MovieMapper movieMapper;
+
+    private final PurchaseService purchaseService;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -96,5 +100,19 @@ public class MovieControllerImpl implements MovieController {
                 .header(HttpHeaders.CONTENT_TYPE, "application/vnd.apple.mpegurl")
                 .body(movieService.getMovieVideoUrl(id)
                 );
+    }
+
+
+    @PostMapping("/{id}/{moviePlanId}/purchase")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<CreatePaymentSessionResponse> purchaseMovie(
+            @PathVariable("id") String movieId,
+            @PathVariable("moviePlanId") String moviePlanId,
+            @RequestParam("userId") String userId
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                new CreatePaymentSessionResponse(purchaseService.
+                        createPurchaseSession(movieId, moviePlanId, userId))
+        );
     }
 }

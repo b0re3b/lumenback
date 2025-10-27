@@ -1,6 +1,6 @@
 package com.lumen.awsspringbootservice.entity;
 
-import com.lumen.awsspringbootservice.enums.PlanType;
+import com.lumen.awsspringbootservice.enums.PurchaseStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,10 +31,13 @@ public class Purchase {
     @JoinColumn(name = "movie_id")
     private Movie movie;
 
-    @Enumerated(EnumType.STRING)
-    private PlanType selectedPlanType;
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private MoviePlan selectedMoviePlan;
 
     private LocalDateTime purchasedAt;
     private LocalDateTime expiresAt;
+
+    @Enumerated(EnumType.STRING)
+    private PurchaseStatus purchaseStatus;
 }
 

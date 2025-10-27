@@ -42,11 +42,11 @@ public abstract class BaseRepositoryTest {
                 .build();
     }
 
-    protected Purchase buildPurchase(User user, Movie movie, PlanType planType) {
+    protected Purchase buildPurchase(User user, Movie movie, MoviePlan moviePlan) {
         return Purchase.builder()
                 .user(user)
                 .movie(movie)
-                .selectedPlanType(planType)
+                .selectedMoviePlan(moviePlan)
                 .purchasedAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusDays(30))
                 .build();

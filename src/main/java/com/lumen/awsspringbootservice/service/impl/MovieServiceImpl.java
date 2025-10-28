@@ -80,9 +80,12 @@ public class MovieServiceImpl implements MovieService {
     public Page<MovieDto> getMovies(MovieFiltersRequest filter, int pageNumber, int pageSize) {
         log.info("Fetching movies with filters: {}, page {}, size {}", filter, pageNumber, pageSize);
 
-        Specification<Movie> spec = Specification.
-                allOf(MovieSpecifications.title(filter.getTitle()))
-                .and(MovieSpecifications.genre(filter.getGenre()))
+        Specification<Movie> spec = Specification
+                .allOf(MovieSpecifications.title(filter.getTitle()))
+                .and(MovieSpecifications.author(filter.getAuthor()))
+                .and(MovieSpecifications.genres(filter.getGenres()))
+                .and(MovieSpecifications.planTypes(filter.getPlanTypes()))
+                .and(MovieSpecifications.minRating(filter.getMinRating()))
                 .and(MovieSpecifications.premiereDateAfter(filter.getPremiereDateFrom()))
                 .and(MovieSpecifications.premiereDateBefore(filter.getPremiereDateTo()));
 

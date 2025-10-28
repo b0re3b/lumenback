@@ -1,6 +1,7 @@
 package com.lumen.awsspringbootservice.dto.request;
 
 import com.lumen.awsspringbootservice.enums.Genre;
+import com.lumen.awsspringbootservice.enums.PlanType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -20,8 +22,17 @@ public class MovieFiltersRequest {
     @Schema(description = "Movie title substring for search", example = "Rings")
     private String title;
 
-    @Schema(description = "Filter by movie genre", example = "DRAMA")
-    private Genre genre;
+    @Schema(description = "Movie author substring for search", example = "John Martin")
+    private String author;
+
+    @Schema(description = "List of genres to filter by (movie must contain all)", example = "[\"DRAMA\", \"ACTION\"]")
+    private List<Genre> genres;
+
+    @Schema(description = "List of plan types to filter by (movie must contain all)", example = "[\"MONTH\", \"WEEK\"]")
+    private List<PlanType> planTypes;
+
+    @Schema(description = "Minimum average rating for the movie", example = "4.5")
+    private Double minRating;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     @Schema(description = "Filter for movies with premiere date after this date", example = "2023-01-01")

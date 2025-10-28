@@ -6,6 +6,8 @@ import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
 import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
 import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
 import com.lumen.awsspringbootservice.entity.Movie;
+import com.lumen.awsspringbootservice.enums.Genre;
+import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.repository.MovieRepository;
@@ -25,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -172,22 +175,27 @@ class MovieServiceImplTest {
     class GetMoviesWithFilterTests {
 
         @Test
-        @DisplayName("Should return movies page when filter applied")
-        void shouldReturnMoviesWithFilter() {
+        @DisplayName("Should build full specification and return filtered movies")
+        void shouldBuildFullSpecificationAndReturnMovies() {
             // given
             MovieFiltersRequest filter = new MovieFiltersRequest();
-            filter.setTitle("test");
+            filter.setTitle("Matrix");
+            filter.setAuthor("Wachowski");
+            filter.setGenres(List.of(Genre.ACTION, Genre.COMEDY));
+            filter.setPlanTypes(List.of(PlanType.MONTH, PlanType.WEEK));
+            filter.setMinRating(4.5);
+            filter.setPremiereDateFrom(LocalDate.of(1999, 1, 1));
+            filter.setPremiereDateTo(LocalDate.of(2003, 12, 31));
 
             Movie entity = new Movie();
             entity.setId(UUID.randomUUID());
             MovieDto dto = new MovieDto();
             dto.setId(entity.getId().toString());
 
-            PageRequest pageable = PageRequest.of(0, 5);
+            PageRequest pageable = PageRequest.of(0, 10);
             Page<Movie> entitiesPage = new PageImpl<>(List.of(entity));
-            Page<MovieDto> expectedPage = new PageImpl<>(List.of(dto));
 
-            when(movieRepository.findAll(any(Specification.class), any(PageRequest.class)))
+            when(movieRepository.findAll(any(Specification.class), eq(pageable)))
                     .thenReturn(entitiesPage);
             when(movieMapper.toDto(entity)).thenReturn(dto);
 
@@ -196,13 +204,16 @@ class MovieServiceImplTest {
 
             // then
             assertNotNull(result);
-            assertEquals(expectedPage.getContent().size(), result.getContent().size());
+            assertEquals(1, result.getTotalElements());
             assertEquals(dto.getId(), result.getContent().get(0).getId());
 
-            verify(movieRepository).findAll(any(Specification.class), any(PageRequest.class));
+            verify(movieRepository).findAll(any(Specification.class), eq(pageable));
             verify(movieMapper).toDto(entity);
+
+            verify(movieRepository).findAll(any(Specification.class), eq(pageable));
         }
     }
+
 
     @Nested
     @DisplayName("getMovies without filter Tests")

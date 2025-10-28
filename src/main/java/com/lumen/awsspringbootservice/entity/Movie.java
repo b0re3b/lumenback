@@ -45,9 +45,28 @@ public class Movie {
     @Column(name = "premiere_date")
     private LocalDateTime premiereDate;
 
-    @Column(name = "video_s3_key")
-    private String videoS3Key;
+    @Column(name = "video_manifest_s3_key")
+    private String videoManifestS3Key;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "movie_fragments", joinColumns = @JoinColumn(name = "movie_id"))
+    @OrderColumn(name = "fragment_index")
+    private List<VideoFragment> videoFragments = new ArrayList<>();
 
     @Column(name = "poster_s3_key")
     private String posterS3Key;
+
+    @Embeddable
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class VideoFragment {
+        @Column(name = "video_fragment_s3_key")
+        private String videoFragmentS3Key;
+
+        @Column(name = "duration")
+        private String duration;
+    }
+
 }

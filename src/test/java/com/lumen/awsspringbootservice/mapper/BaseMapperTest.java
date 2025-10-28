@@ -12,6 +12,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -26,7 +27,7 @@ public abstract class BaseMapperTest {
                 .description("Some test description")
                 .premiereDate(LocalDateTime.now().minusDays(10))
                 .genres(Set.of(Genre.DRAMA, Genre.FANTASY))
-                .videoS3Key("video-s3-key")
+                .videoFragments(new ArrayList<>(List.of(new Movie.VideoFragment("video-s3-key", "10.0"))))
                 .posterS3Key("poster-s3-key")
                 .moviePlans(List.of(buildMoviePlanEntity(null, PlanType.WEEK)))
                 .build();

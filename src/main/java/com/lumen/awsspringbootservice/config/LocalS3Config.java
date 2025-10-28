@@ -1,5 +1,6 @@
 package com.lumen.awsspringbootservice.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,7 @@ import java.net.URI;
 
 @Configuration
 @Profile("local")
+@Slf4j
 public class LocalS3Config {
     @Value("${aws.s3.endpoint}")
     private String endpoint;
@@ -49,6 +51,7 @@ public class LocalS3Config {
     @Bean
     @Primary
     public S3Presigner s3Presigner() {
+        log.info("s3Presigner");
         return S3Presigner.builder()
                 .endpointOverride(URI.create(endpoint))
                 .region(Region.of(region))
@@ -57,6 +60,10 @@ public class LocalS3Config {
                                 AwsBasicCredentials.create(accessKey, secretKey)
                         )
                 )
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .build())
                 .build();
+
     }
 }

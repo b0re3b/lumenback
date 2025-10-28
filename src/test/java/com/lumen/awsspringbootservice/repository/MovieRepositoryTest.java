@@ -43,7 +43,7 @@ class MovieRepositoryTest extends BaseRepositoryTest {
             assertEquals(saved.getDescription(), found.get().getDescription());
             assertEquals(saved.getPremiereDate(), found.get().getPremiereDate());
             assertEquals(saved.getGenres(), found.get().getGenres());
-            assertEquals(saved.getVideoS3Key(), found.get().getVideoS3Key());
+            assertEquals(saved.getVideoFragments(), found.get().getVideoFragments());
             assertEquals(saved.getAuthor(), found.get().getAuthor());
             assertEquals(saved.getPosterS3Key(), found.get().getPosterS3Key());
         }
@@ -78,7 +78,7 @@ class MovieRepositoryTest extends BaseRepositoryTest {
             assertEquals(movie.getDescription(), saved.getDescription());
             assertEquals(movie.getPremiereDate(), saved.getPremiereDate());
             assertEquals(movie.getGenres(), saved.getGenres());
-            assertEquals(movie.getVideoS3Key(), saved.getVideoS3Key());
+            assertEquals(movie.getVideoFragments(), saved.getVideoFragments());
             assertEquals(movie.getAuthor(), saved.getAuthor());
             assertEquals(movie.getPosterS3Key(), saved.getPosterS3Key());
         }
@@ -114,7 +114,7 @@ class MovieRepositoryTest extends BaseRepositoryTest {
             assertEquals(saved.getDescription(), updated.getDescription());
             assertEquals(saved.getPremiereDate(), updated.getPremiereDate());
             assertEquals(saved.getGenres(), updated.getGenres());
-            assertEquals(saved.getVideoS3Key(), updated.getVideoS3Key());
+            assertEquals(saved.getVideoFragments(), updated.getVideoFragments());
             assertEquals(saved.getAuthor(), updated.getAuthor());
             assertEquals(saved.getPosterS3Key(), updated.getPosterS3Key());
         }

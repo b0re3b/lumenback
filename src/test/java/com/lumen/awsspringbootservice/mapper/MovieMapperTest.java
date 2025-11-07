@@ -1,11 +1,11 @@
 package com.lumen.awsspringbootservice.mapper;
 
-import com.lumen.awsspringbootservice.dto.PageResponse;
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
 import com.lumen.awsspringbootservice.dto.movie.MoviePlanShortDto;
-import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
-import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
-import com.lumen.awsspringbootservice.dto.response.MovieResponse;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.response.PageResponse;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieDetailsResponse;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieResponse;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.entity.MoviePlan;
 import com.lumen.awsspringbootservice.enums.PlanType;

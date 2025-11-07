@@ -39,8 +39,8 @@ public class MockPaymentController {
                   <body style="font-family: sans-serif; text-align:center;">
                     <h2>Mock Payment Gateway</h2>
                     <p>Session: %s</p>
-                    <a href="http://localhost:8080/api/v1/mock/payments/confirm?sessionId=%s">✅ Confirm Payment</a><br><br>
-                    <a href="http://localhost:8080/api/v1/mock/payments/cancel?sessionId=%s">❌ Cancel Payment</a>
+                    <a href="http://localhost:8080/api/v1/mock/payments/confirm?sessionId=%s">Confirm Payment</a><br><br>
+                    <a href="http://localhost:8080/api/v1/mock/payments/cancel?sessionId=%s">Cancel Payment</a>
                   </body>
                 </html>
                 """.formatted(sessionId, sessionId, sessionId);
@@ -53,7 +53,7 @@ public class MockPaymentController {
 
         return ResponseEntity.ok("""
                     <html><body style="text-align:center;">
-                    <h3>✅ Payment successful!</h3>
+                    <h3>Payment successful!</h3>
                     <p>You can close this window now.</p>
                     </body></html>
                 """);
@@ -65,7 +65,7 @@ public class MockPaymentController {
 
         return ResponseEntity.ok("""
                     <html><body style="text-align:center;">
-                    <h3>❌ Payment cancelled!</h3>
+                    <h3>Payment cancelled!</h3>
                     <p>You can close this window now.</p>
                     </body></html>
                 """);

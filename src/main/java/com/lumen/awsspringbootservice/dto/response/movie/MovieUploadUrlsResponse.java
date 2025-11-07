@@ -1,4 +1,4 @@
-package com.lumen.awsspringbootservice.dto.response;
+package com.lumen.awsspringbootservice.dto.response.movie;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -31,7 +31,7 @@ public class Purchase {
     @JoinColumn(name = "movie_id")
     private Movie movie;
 
-    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private MoviePlan selectedMoviePlan;
 
     private LocalDateTime purchasedAt;

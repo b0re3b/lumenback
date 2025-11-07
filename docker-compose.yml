@@ -1,13 +1,41 @@
-version: "3.8"
+networks:
+  lumen_network:
+    driver: bridge
+
 services:
-  localstack:
-    image: localstack/localstack:3.0.2
-    container_name: localstack
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
     ports:
-      - "4566:4566"
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "1025" ]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    networks:
+      - lumen_network
+
+  localstack:
+    build:
+      context: .
+    container_name: localstack
+    depends_on:
+      mailpit:
+        condition: service_healthy
     environment:
-      - SERVICES=s3
-      - DEFAULT_REGION=us-east-1
+      - SERVICES=s3,ses
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
       - DEBUG=1
     volumes:
-      - ./01-create-buckets.sh:/etc/localstack/init/ready.d/01-create-buckets.sh
+      - ./docker-scripts/01-create-buckets.sh:/etc/localstack/init/ready.d/01-create-buckets.sh:ro
+      - ./docker-scripts/02-create-ses.sh:/etc/localstack/init/ready.d/02-create-ses.sh:ro
+      - ./docker-scripts/send_ses_to_mailpit.py:/opt/localstack/send_ses_to_mailpit.py
+    ports:
+      - "4566:4566"
+    networks:
+      - lumen_network
+

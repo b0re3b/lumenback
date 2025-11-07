@@ -1,4 +1,4 @@
-package com.lumen.awsspringbootservice.dto.request;
+package com.lumen.awsspringbootservice.dto.response.movie;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MovieUploadUrlsRequest {
-
-    private String manifestContent;
+public class MovieResponse {
+    private String id;
+    private String title;
+    private String posterUrl;
 }

@@ -1,14 +1,16 @@
 package com.lumen.awsspringbootservice.service.impl;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
-import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
-import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieUploadUrlsRequest;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieUploadUrlsResponse;
 import com.lumen.awsspringbootservice.entity.Movie;
+import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.repository.MovieRepository;
+import com.lumen.awsspringbootservice.repository.PurchaseRepository;
 import com.lumen.awsspringbootservice.repository.S3MoviePosterRepository;
 import com.lumen.awsspringbootservice.repository.S3MovieVideoRepository;
 import com.lumen.awsspringbootservice.service.MovieService;
@@ -17,6 +19,7 @@ import com.lumen.awsspringbootservice.util.MovieSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -37,6 +40,8 @@ public class MovieServiceImpl implements MovieService {
     private final S3MoviePosterRepository s3MoviePosterRepository;
 
     private final S3MovieVideoRepository s3MovieVideoRepository;
+
+    private final PurchaseRepository purchaseRepository;
 
     public MovieDto getMovieById(String movieId) {
         log.info("Fetching movie by id: {}", movieId);
@@ -175,6 +180,36 @@ public class MovieServiceImpl implements MovieService {
             fragmentsWithUrls.put(presignedUrl, fragment.getDuration());
         }
         return HlsUtils.generateManifest(fragmentsWithUrls);
+    }
+
+    public Page<MovieDto> getTopSalesMovies(int pageNumber, int pageSize) {
+        log.info("Fetching top sales movies: page {}, size {}", pageNumber, pageSize);
+
+        Page<UUID> topMovieIdsPage = purchaseRepository.findTopSales(PageRequest.of(pageNumber, pageSize));
+
+        List<UUID> movieUuids = topMovieIdsPage.getContent().stream().toList();
+
+        List<Movie> movies = movieRepository.findAllById(movieUuids);
+
+        List<MovieDto> movieDtos = movieUuids.stream()
+                .map(id -> movies.stream()
+                        .filter(m -> m.getId().equals(id))
+                        .findFirst()
+                        .map(movieMapper::toDto)
+                        .orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+
+        return new PageImpl<>(
+                movieDtos,
+                topMovieIdsPage.getPageable(),
+                topMovieIdsPage.getTotalElements()
+        );
+    }
+
+    public Page<Genre> getTopGenres(int pageNumber, int pageSize) {
+        log.info("Fetching top genres: page {}, size {}", pageNumber, pageSize);
+        return purchaseRepository.findTopGenresOnly(PageRequest.of(pageNumber, pageSize));
     }
 
 }

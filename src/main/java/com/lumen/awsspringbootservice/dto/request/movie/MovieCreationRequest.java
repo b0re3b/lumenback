@@ -1,4 +1,4 @@
-package com.lumen.awsspringbootservice.dto.request;
+package com.lumen.awsspringbootservice.dto.request.movie;
 
 import com.lumen.awsspringbootservice.dto.movie.MoviePlanShortDto;
 import com.lumen.awsspringbootservice.enums.Genre;

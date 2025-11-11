@@ -3,7 +3,7 @@ package com.lumen.awsspringbootservice.controller.impl;
 import com.lumen.awsspringbootservice.controller.ReportController;
 import com.lumen.awsspringbootservice.dto.request.report.ReportRequest;
 import com.lumen.awsspringbootservice.dto.response.MessageResponse;
-import com.lumen.awsspringbootservice.service.impl.PurchaseReportService;
+import com.lumen.awsspringbootservice.service.PurchaseReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -2,7 +2,7 @@ package com.lumen.awsspringbootservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lumen.awsspringbootservice.controller.impl.ReportControllerImpl;
-import com.lumen.awsspringbootservice.service.impl.PurchaseReportService;
+import com.lumen.awsspringbootservice.service.PurchaseReportService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

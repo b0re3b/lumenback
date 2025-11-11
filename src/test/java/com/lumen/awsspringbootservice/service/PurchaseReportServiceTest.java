@@ -8,8 +8,7 @@ import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.enums.Role;
 import com.lumen.awsspringbootservice.repository.PurchaseRepository;
-import com.lumen.awsspringbootservice.service.impl.PurchaseReportService;
-import com.lumen.awsspringbootservice.service.impl.SimpleEmailService;
+import com.lumen.awsspringbootservice.service.impl.PurchaseReportServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,9 +28,9 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
-@DisplayName("PurchaseReportService Unit Tests")
+@DisplayName("PurchaseReportServiceImpl Unit Tests")
 @ExtendWith(MockitoExtension.class)
-class PurchaseReportServiceTest {
+class PurchaseReportServiceImplTest {
 
     @Mock
     private PurchaseRepository purchaseRepository;
@@ -40,7 +39,7 @@ class PurchaseReportServiceTest {
     private SimpleEmailService simpleEmailService;
 
     @InjectMocks
-    private PurchaseReportService purchaseReportService;
+    private PurchaseReportServiceImpl purchaseReportService;
 
     private Movie movie;
     private User user;

@@ -1,6 +1,6 @@
 package com.lumen.awsspringbootservice.scheduler;
 
-import com.lumen.awsspringbootservice.service.impl.PurchaseReportService;
+import com.lumen.awsspringbootservice.service.PurchaseReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

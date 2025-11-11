@@ -1,5 +1,7 @@
 package com.lumen.awsspringbootservice.service.impl;
 
+import com.lumen.awsspringbootservice.exception.EmailSendingException;
+import com.lumen.awsspringbootservice.service.SimpleEmailService;
 import jakarta.activation.DataHandler;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
@@ -24,7 +26,7 @@ import java.util.Properties;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SimpleEmailService {
+public class SimpleEmailServiceImpl implements SimpleEmailService {
 
     private final SesClient sesClient;
 
@@ -74,6 +76,7 @@ public class SimpleEmailService {
             log.info("Report email successfully sent via AWS SES to: {}", (Object) recipients);
         } catch (Exception e) {
             log.error("Failed to send report via AWS SES", e);
+            throw new EmailSendingException("Failed to send report via AWS SES", e);
         }
     }
 }

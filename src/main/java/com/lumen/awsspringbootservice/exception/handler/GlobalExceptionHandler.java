@@ -1,6 +1,7 @@
 package com.lumen.awsspringbootservice.exception.handler;
 
 import com.lumen.awsspringbootservice.dto.response.ExceptionMessageResponse;
+import com.lumen.awsspringbootservice.exception.EmailSendingException;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.exception.PaymentException;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionMessageResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+
+    @ExceptionHandler(EmailSendingException.class)
+    public ResponseEntity<ExceptionMessageResponse> handleIllegalArgumentException(EmailSendingException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ExceptionMessageResponse> handleGenericException(Exception ex) {

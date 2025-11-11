@@ -4,6 +4,8 @@ import com.lumen.awsspringbootservice.dto.report.ReportDataDto;
 import com.lumen.awsspringbootservice.dto.report.TopMovieDto;
 import com.lumen.awsspringbootservice.entity.Purchase;
 import com.lumen.awsspringbootservice.repository.PurchaseRepository;
+import com.lumen.awsspringbootservice.service.PurchaseReportService;
+import com.lumen.awsspringbootservice.service.SimpleEmailService;
 import com.lumen.awsspringbootservice.util.ReportGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +21,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PurchaseReportService {
+public class PurchaseReportServiceImpl implements PurchaseReportService {
 
     private final PurchaseRepository purchaseRepository;
     private final SimpleEmailService simpleEmailService;

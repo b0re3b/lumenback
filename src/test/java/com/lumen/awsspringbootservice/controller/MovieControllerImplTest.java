@@ -15,6 +15,7 @@ import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.mapper.MovieMapper;
 import com.lumen.awsspringbootservice.service.MovieService;
+import com.lumen.awsspringbootservice.service.PurchaseService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -50,6 +51,9 @@ class MovieControllerImplTest {
 
     @MockitoBean
     private MovieMapper movieMapper;
+
+    @MockitoBean
+    private PurchaseService purchaseService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -165,4 +169,29 @@ class MovieControllerImplTest {
 
         Mockito.verify(movieService).getMovieVideoUrl(movieId);
     }
+
+    @Test
+    @DisplayName("POST /movies/{id}/{moviePlanId}/purchase should return 201 with payment URL")
+    void shouldReturnCreatedPaymentSession_whenPurchaseMovie() throws Exception {
+        // given
+        String movieId = "movie-123";
+        String moviePlanId = "plan-456";
+        String userId = "user-789";
+        String expectedUrl = "https://mock.payment/session123";
+
+        Mockito.when(purchaseService.createPurchaseSession(movieId, moviePlanId, userId))
+                .thenReturn(expectedUrl);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/lumen/movies/{id}/{moviePlanId}/purchase", movieId, moviePlanId)
+                        .param("userId", userId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.paymentUrl").value(expectedUrl));
+
+        // verify
+        Mockito.verify(purchaseService).createPurchaseSession(movieId, moviePlanId, userId);
+    }
+
 }

@@ -1,7 +1,6 @@
 package com.lumen.awsspringbootservice.repository;
 
 import com.lumen.awsspringbootservice.entity.*;
-import com.lumen.awsspringbootservice.entity.Record;
 import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.enums.Role;
@@ -17,6 +16,7 @@ public abstract class BaseRepositoryTest {
     public User buildUser() {
         return User.builder()
                 .email("user_" + UUID.randomUUID() + "@example.com")
+                .username("user_" + UUID.randomUUID() + "@example.com")
                 .password("password123")
                 .role(Role.CUSTOMER)
                 .build();
@@ -42,22 +42,13 @@ public abstract class BaseRepositoryTest {
                 .build();
     }
 
-    protected Purchase buildPurchase(User user, Movie movie, PlanType planType) {
+    protected Purchase buildPurchase(User user, Movie movie, MoviePlan moviePlan) {
         return Purchase.builder()
                 .user(user)
                 .movie(movie)
-                .selectedPlanType(planType)
+                .selectedMoviePlan(moviePlan)
                 .purchasedAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusDays(30))
-                .build();
-    }
-
-    protected Record buildRecord(User user, Movie movie, Purchase purchases) {
-        return Record.builder()
-                .user(user)
-                .movie(movie)
-                .purchase(purchases)
-                .purchasedAt(LocalDateTime.now())
                 .build();
     }
 

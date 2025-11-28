@@ -1,10 +1,10 @@
 package com.lumen.awsspringbootservice.service;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
-import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
-import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieUploadUrlsRequest;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieUploadUrlsResponse;
 import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.enums.PlanType;
@@ -14,6 +14,7 @@ import com.lumen.awsspringbootservice.repository.MovieRepository;
 import com.lumen.awsspringbootservice.repository.S3MoviePosterRepository;
 import com.lumen.awsspringbootservice.repository.S3MovieVideoRepository;
 import com.lumen.awsspringbootservice.service.impl.MovieServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -410,5 +412,80 @@ class MovieServiceImplTest {
                     () -> movieService.getMovieVideoUrl(movieId.toString()));
         }
     }
+
+    @Nested
+    @DisplayName("Top sales and genres Tests")
+    class TopSalesAndGenresTests {
+
+        @Mock
+        private com.lumen.awsspringbootservice.repository.PurchaseRepository purchaseRepository;
+
+        @BeforeEach
+        void injectPurchaseRepo() {
+            ReflectionTestUtils.setField(movieService, "purchaseRepository", purchaseRepository);
+        }
+
+        @Test
+        @DisplayName("Should return top sales movies ordered by purchase count")
+        void shouldReturnTopSalesMovies() {
+            // given
+            UUID movie1Id = UUID.randomUUID();
+            UUID movie2Id = UUID.randomUUID();
+
+            Movie movie1 = Movie.builder().id(movie1Id).title("Interstellar").build();
+            Movie movie2 = Movie.builder().id(movie2Id).title("Inception").build();
+
+            MovieDto dto1 = new MovieDto();
+            dto1.setId(movie1Id.toString());
+            dto1.setTitle("Interstellar");
+
+            MovieDto dto2 = new MovieDto();
+            dto2.setId(movie2Id.toString());
+            dto2.setTitle("Inception");
+
+            PageRequest pageable = PageRequest.of(0, 10);
+            Page<UUID> topIdsPage = new PageImpl<>(List.of(movie1Id, movie2Id), pageable, 2);
+
+            when(purchaseRepository.findTopSales(pageable)).thenReturn(topIdsPage);
+            when(movieRepository.findAllById(List.of(movie1Id, movie2Id))).thenReturn(List.of(movie1, movie2));
+            when(movieMapper.toDto(movie1)).thenReturn(dto1);
+            when(movieMapper.toDto(movie2)).thenReturn(dto2);
+
+            // when
+            Page<MovieDto> result = movieService.getTopSalesMovies(0, 10);
+
+            // then
+            assertNotNull(result);
+            assertEquals(2, result.getContent().size());
+            assertEquals(dto1.getId(), result.getContent().get(0).getId());
+            assertEquals(dto2.getId(), result.getContent().get(1).getId());
+
+            verify(purchaseRepository).findTopSales(pageable);
+            verify(movieRepository).findAllById(List.of(movie1Id, movie2Id));
+            verify(movieMapper, times(2)).toDto(any(Movie.class));
+        }
+
+        @Test
+        @DisplayName("Should return top genres page from repository")
+        void shouldReturnTopGenres() {
+            // given
+            PageRequest pageable = PageRequest.of(0, 5);
+            Page<Genre> genrePage = new PageImpl<>(List.of(Genre.ACTION, Genre.DRAMA), pageable, 2);
+
+            when(purchaseRepository.findTopGenresOnly(pageable)).thenReturn(genrePage);
+
+            // when
+            Page<Genre> result = movieService.getTopGenres(0, 5);
+
+            // then
+            assertNotNull(result);
+            assertEquals(2, result.getTotalElements());
+            assertTrue(result.getContent().contains(Genre.ACTION));
+            assertTrue(result.getContent().contains(Genre.DRAMA));
+
+            verify(purchaseRepository).findTopGenresOnly(pageable);
+        }
+    }
+
 
 }

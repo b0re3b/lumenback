@@ -1,4 +1,4 @@
-package com.lumen.awsspringbootservice.dto.request;
+package com.lumen.awsspringbootservice.dto.request.purchase;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MovieUploadUrlsRequest {
-
-    private String manifestContent;
+public class CreatePurchaseRequest {
+    private String moviePlanId;
 }

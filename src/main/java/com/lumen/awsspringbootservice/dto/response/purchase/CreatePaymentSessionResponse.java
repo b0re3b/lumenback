@@ -1,4 +1,5 @@
-package com.lumen.awsspringbootservice.dto.response;
+package com.lumen.awsspringbootservice.dto.response.purchase;
+
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class MovieResponse {
-    private String id;
-    private String title;
-    private String posterUrl;
+public class CreatePaymentSessionResponse {
+    private String paymentUrl;
 }

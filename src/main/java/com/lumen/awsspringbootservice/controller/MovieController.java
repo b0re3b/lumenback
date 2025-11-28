@@ -1,12 +1,14 @@
 package com.lumen.awsspringbootservice.controller;
 
-import com.lumen.awsspringbootservice.dto.PageResponse;
-import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
-import com.lumen.awsspringbootservice.dto.response.MovieDetailsResponse;
-import com.lumen.awsspringbootservice.dto.response.MovieResponse;
-import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieUploadUrlsRequest;
+import com.lumen.awsspringbootservice.dto.response.PageResponse;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieDetailsResponse;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieResponse;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.dto.response.purchase.CreatePaymentSessionResponse;
+import com.lumen.awsspringbootservice.enums.Genre;
 import com.lumen.awsspringbootservice.validator.annotation.ValidImageFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -154,6 +156,82 @@ public interface MovieController {
             @Parameter(description = "Unique movie ID", required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable("id") String id
+    );
+
+    @Operation(
+            summary = "Purchase a movie plan",
+            description = """
+                    Creates a new purchase session for the specified movie and plan.
+                    This will generate a Stripe checkout session for the given user.""",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "201",
+                            description = "Purchase session successfully created",
+                            content = @Content(schema = @Schema(implementation = CreatePaymentSessionResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "404", description = "Movie or plan not found"),
+                    @ApiResponse(responseCode = "400", description = "Invalid request parameters")
+            }
+    )
+    @PostMapping("/{id}/{moviePlanId}/purchase")
+    ResponseEntity<CreatePaymentSessionResponse> purchaseMovie(
+            @Parameter(description = "Movie ID", required = true,
+                    example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable("id") String movieId,
+
+            @Parameter(description = "Movie plan ID", required = true,
+                    example = "b2c924c3-ff44-42a0-8f88-9b8bdb46d222")
+            @PathVariable("moviePlanId") String moviePlanId,
+
+            @Parameter(description = "User ID who is making the purchase", required = true,
+                    example = "user-12345")
+            @RequestParam("userId") String userId
+    );
+
+
+    @Operation(
+            summary = "Get top-selling movies and genres",
+            description = """
+                    Retrieves two analytics endpoints:
+                    - Top-selling movies by purchase count
+                    - Top-selling genres by aggregate revenue or count
+                    Used for analytical dashboards or recommendation widgets.""",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully retrieved the list",
+                            content = @Content(schema = @Schema(implementation = PageResponse.class))
+                    )
+            }
+    )
+    @GetMapping("/top-sales")
+    ResponseEntity<PageResponse<MovieResponse>> getTopSalesMovies(
+            @Parameter(description = "Page number (starting from 1)", example = "1")
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+
+            @Parameter(description = "Number of items per page", example = "10")
+            @RequestParam(defaultValue = "10") @Min(1) int size
+    );
+
+
+    @Operation(
+            summary = "Get top-genres by sales",
+            description = "Returns a paginated list of the most popular movie genres based on sales statistics.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully retrieved top genres",
+                            content = @Content(schema = @Schema(implementation = PageResponse.class))
+                    )
+            }
+    )
+    @GetMapping("/top-genres")
+    ResponseEntity<PageResponse<Genre>> getTopGenres(
+            @Parameter(description = "Page number (starting from 1)", example = "1")
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+
+            @Parameter(description = "Number of items per page", example = "10")
+            @RequestParam(defaultValue = "10") @Min(1) int size
     );
 
 }

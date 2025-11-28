@@ -1,10 +1,11 @@
 package com.lumen.awsspringbootservice.service;
 
 import com.lumen.awsspringbootservice.dto.movie.MovieDto;
-import com.lumen.awsspringbootservice.dto.request.MovieCreationRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieFiltersRequest;
-import com.lumen.awsspringbootservice.dto.request.MovieUploadUrlsRequest;
-import com.lumen.awsspringbootservice.dto.response.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieCreationRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieFiltersRequest;
+import com.lumen.awsspringbootservice.dto.request.movie.MovieUploadUrlsRequest;
+import com.lumen.awsspringbootservice.dto.response.movie.MovieUploadUrlsResponse;
+import com.lumen.awsspringbootservice.enums.Genre;
 import org.springframework.data.domain.Page;
 
 import java.io.IOException;
@@ -92,4 +93,28 @@ public interface MovieService {
      * @throws IllegalStateException                                      if the movie has no associated video fragments.
      */
     String getMovieVideoUrl(String movieId);
+
+    /**
+     * Retrieves a paginated list of top-selling movies ranked by total purchases.
+     * <p>
+     * This method analyzes completed purchase records and aggregates sales data
+     * to determine which movies have the highest demand.
+     *
+     * @param pageNumber the current page number (0-based index).
+     * @param pageSize   the number of records to include per page.
+     * @return a {@link Page} of {@link MovieDto} representing top-selling movies.
+     */
+    Page<MovieDto> getTopSalesMovies(int pageNumber, int pageSize);
+
+    /**
+     * Retrieves a paginated list of the most popular genres ranked by purchase frequency.
+     * <p>
+     * This method aggregates sales and movie data to identify which genres
+     * have been purchased or streamed most often by users.
+     *
+     * @param pageNumber the current page number (0-based index).
+     * @param pageSize   the number of records to include per page.
+     * @return a {@link Page} of {@link Genre} representing the most popular genres.
+     */
+    Page<Genre> getTopGenres(int pageNumber, int pageSize);
 }

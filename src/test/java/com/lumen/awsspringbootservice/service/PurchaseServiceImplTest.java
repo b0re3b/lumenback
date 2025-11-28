@@ -5,6 +5,7 @@ import com.lumen.awsspringbootservice.entity.Movie;
 import com.lumen.awsspringbootservice.entity.MoviePlan;
 import com.lumen.awsspringbootservice.entity.Purchase;
 import com.lumen.awsspringbootservice.entity.User;
+import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.enums.PurchaseStatus;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
 import com.lumen.awsspringbootservice.exception.PaymentException;
@@ -24,16 +25,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("PurchaseServiceImpl Simplified Unit Tests")
+@DisplayName("PurchaseServiceImpl Unit Tests (Updated Logic)")
 class PurchaseServiceImplTest {
 
     @Mock
@@ -47,128 +51,97 @@ class PurchaseServiceImplTest {
     @InjectMocks
     private PurchaseServiceImpl purchaseService;
 
-
     @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(purchaseService, "paymentUrl",
-                "http://mock-payment-service:8082/api/v1/payments/create-session");
-
-        ReflectionTestUtils.setField(purchaseService, "webhookEndpoint",
-                "api/v1/lumen/purchases/callback");
-
+    void init() {
+        ReflectionTestUtils.setField(purchaseService, "paymentUrl", "http://mock/payment");
+        ReflectionTestUtils.setField(purchaseService, "webhookEndpoint", "api/callback");
         ReflectionTestUtils.setField(purchaseService, "serverAddress", "localhost");
         ReflectionTestUtils.setField(purchaseService, "serverPort", 8080);
     }
 
     @Nested
-    @DisplayName("createPurchaseSession Tests")
+    @DisplayName("createPurchaseSession")
     class CreatePurchaseSessionTests {
 
         @Test
-        @DisplayName("Should create purchase and return payment URL successfully")
-        void shouldReturnPaymentUrlWhenSuccess() {
-            UUID userId = UUID.randomUUID();
+        void shouldCreatePurchaseSession() {
             UUID movieId = UUID.randomUUID();
-            UUID moviePlanId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID planId = UUID.randomUUID();
 
-            User user = new User();
-            Movie movie = new Movie();
-            MoviePlan plan = new MoviePlan();
-            Purchase purchase = Purchase.builder().id(UUID.randomUUID()).build();
+            User user = User.builder().id(userId).build();
+            Movie movie = Movie.builder().id(movieId).premiereDate(LocalDateTime.now().plusDays(3)).build();
+            MoviePlan plan = MoviePlan.builder().id(planId).type(PlanType.MONTH).price(BigDecimal.TEN).movie(movie).build();
 
-            when(purchaseRepository.findByUserIdAndSelectedMoviePlanId(userId, moviePlanId))
-                    .thenReturn(Optional.empty());
+            when(purchaseRepository.findAllByUserIdAndMovieId(userId, movieId))
+                    .thenReturn(Collections.emptyList());
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
-            when(moviePlanRepository.findById(moviePlanId)).thenReturn(Optional.of(plan));
-            when(purchaseRepository.save(any())).thenReturn(purchase);
+            when(moviePlanRepository.findById(planId)).thenReturn(Optional.of(plan));
 
-            WebClient mockWebClient = mock(WebClient.class, RETURNS_DEEP_STUBS);
-            CreatePaymentSessionResponse mockResponse = new CreatePaymentSessionResponse();
-            mockResponse.setPaymentUrl("https://mock.payment/session123");
+            Purchase saved = Purchase.builder().id(UUID.randomUUID()).user(user).movie(movie).selectedMoviePlan(plan).build();
+            when(purchaseRepository.save(any())).thenReturn(saved);
 
-            when(mockWebClient.post()
-                    .uri(anyString())
-                    .bodyValue(any())
-                    .retrieve()
-                    .bodyToMono(CreatePaymentSessionResponse.class)
-                    .block())
-                    .thenReturn(mockResponse);
+            WebClient webClient = mock(WebClient.class, RETURNS_DEEP_STUBS);
+            CreatePaymentSessionResponse response = new CreatePaymentSessionResponse("http://mock.payment/success");
+            when(webClient.post().uri(anyString()).bodyValue(any()).retrieve().bodyToMono(eq(CreatePaymentSessionResponse.class)).block())
+                    .thenReturn(response);
 
-            // підміняємо приватне поле webClient у сервісі
-            ReflectionTestUtils.setField(purchaseService, "webClient", mockWebClient);
+            ReflectionTestUtils.setField(purchaseService, "webClient", webClient);
 
-            // when
             String result = purchaseService.createPurchaseSession(
                     movieId.toString(),
-                    moviePlanId.toString(),
-                    userId.toString());
+                    planId.toString(),
+                    userId.toString()
+            );
 
-            // then
-            assertEquals("https://mock.payment/session123", result);
+            assertEquals("http://mock.payment/success", result);
             verify(purchaseRepository).save(any());
         }
 
         @Test
-        @DisplayName("Should throw IllegalStateException if purchase already exists")
-        void shouldThrowWhenPurchaseAlreadyExists() {
-            UUID userId = UUID.randomUUID();
-            UUID moviePlanId = UUID.randomUUID();
-
-            when(purchaseRepository.findByUserIdAndSelectedMoviePlanId(userId, moviePlanId))
-                    .thenReturn(Optional.of(new Purchase()));
-
-            assertThrows(IllegalStateException.class, () ->
-                    purchaseService.createPurchaseSession(
-                            UUID.randomUUID().toString(),
-                            moviePlanId.toString(),
-                            userId.toString()));
-        }
-
-        @Test
-        @DisplayName("Should throw NotFoundException when user not found")
-        void shouldThrowWhenUserNotFound() {
-            UUID userId = UUID.randomUUID();
+        void shouldThrowIfMovieNotFound() {
             UUID movieId = UUID.randomUUID();
-            UUID moviePlanId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID planId = UUID.randomUUID();
 
-            when(purchaseRepository.findByUserIdAndSelectedMoviePlanId(userId, moviePlanId))
-                    .thenReturn(Optional.empty());
-            when(userRepository.findById(userId)).thenReturn(Optional.empty());
+            when(purchaseRepository.findAllByUserIdAndMovieId(userId, movieId))
+                    .thenReturn(Collections.emptyList());
+            when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
+            when(movieRepository.findById(movieId)).thenReturn(Optional.empty());
 
             assertThrows(NotFoundException.class, () ->
                     purchaseService.createPurchaseSession(
                             movieId.toString(),
-                            moviePlanId.toString(),
-                            userId.toString()));
+                            planId.toString(),
+                            userId.toString()
+                    ));
         }
 
         @Test
-        @DisplayName("Should throw PaymentException if response is null")
-        void shouldThrowPaymentExceptionWhenResponseNull() {
-            UUID userId = UUID.randomUUID();
+        void shouldThrowIfPaymentResponseIsNull() {
             UUID movieId = UUID.randomUUID();
-            UUID moviePlanId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID planId = UUID.randomUUID();
 
             User user = new User();
-            Movie movie = new Movie();
-            MoviePlan plan = new MoviePlan();
-            Purchase purchase = Purchase.builder().id(UUID.randomUUID()).build();
+            Movie movie = Movie.builder().id(movieId).premiereDate(LocalDateTime.now().plusDays(2)).build();
+            MoviePlan plan = MoviePlan.builder().id(planId).type(PlanType.PREMIERE).movie(movie).build();
 
-            when(purchaseRepository.findByUserIdAndSelectedMoviePlanId(userId, moviePlanId))
-                    .thenReturn(Optional.empty());
+            when(purchaseRepository.findAllByUserIdAndMovieId(userId, movieId))
+                    .thenReturn(Collections.emptyList());
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(movieRepository.findById(movieId)).thenReturn(Optional.of(movie));
-            when(moviePlanRepository.findById(moviePlanId)).thenReturn(Optional.of(plan));
-            when(purchaseRepository.save(any())).thenReturn(purchase);
+            when(moviePlanRepository.findById(planId)).thenReturn(Optional.of(plan));
+            when(purchaseRepository.save(any())).thenAnswer(inv -> {
+                Purchase p = inv.getArgument(0);
+                p.setId(UUID.randomUUID());
+                return p;
+            });
 
             WebClient mockWebClient = mock(WebClient.class, RETURNS_DEEP_STUBS);
-            when(mockWebClient.post()
-                    .uri(anyString())
-                    .bodyValue(any())
-                    .retrieve()
-                    .bodyToMono(CreatePaymentSessionResponse.class)
-                    .block())
+            when(mockWebClient.post().uri(anyString()).bodyValue(any()).retrieve()
+                    .bodyToMono(eq(CreatePaymentSessionResponse.class)).block())
                     .thenReturn(null);
 
             ReflectionTestUtils.setField(purchaseService, "webClient", mockWebClient);
@@ -176,53 +149,95 @@ class PurchaseServiceImplTest {
             assertThrows(PaymentException.class, () ->
                     purchaseService.createPurchaseSession(
                             movieId.toString(),
-                            moviePlanId.toString(),
-                            userId.toString()));
+                            planId.toString(),
+                            userId.toString()
+                    ));
         }
     }
 
     @Nested
-    @DisplayName("setPurchaseSessionResult Tests")
+    @DisplayName("setPurchaseSessionResult")
     class SetPurchaseSessionResultTests {
 
         @Test
-        @DisplayName("Should update status and set purchasedAt when SUCCESS")
-        void shouldSetPurchasedAtWhenSuccess() {
-            UUID purchaseId = UUID.randomUUID();
-            Purchase purchase = new Purchase();
+        void shouldRemovePendingWhenFailed() {
+            UUID id = UUID.randomUUID();
+            User user = User.builder().id(UUID.randomUUID()).build();
+            Movie movie = Movie.builder().id(UUID.randomUUID()).build();
 
-            when(purchaseRepository.findById(purchaseId)).thenReturn(Optional.of(purchase));
+            Purchase purchase = Purchase.builder()
+                    .id(id)
+                    .user(user)
+                    .movie(movie)
+                    .purchaseStatus(PurchaseStatus.PENDING)
+                    .build();
 
-            purchaseService.setPurchaseSessionResult(purchaseId.toString(), PurchaseStatus.SUCCESS);
+            when(purchaseRepository.findById(id)).thenReturn(Optional.of(purchase));
+
+            purchaseService.setPurchaseSessionResult(id.toString(), PurchaseStatus.FAILED);
+
+            verify(purchaseRepository).delete(purchase);
+        }
+
+
+        @Test
+        void shouldReplaceOldSuccessWhenNewIsSuccess() {
+            UUID id = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID movieId = UUID.randomUUID();
+
+            MoviePlan newPlan = MoviePlan.builder().type(PlanType.MONTH).build();
+            Movie movie = Movie.builder().id(movieId).build();
+            User user = User.builder().id(userId).build();
+
+            Purchase current = Purchase.builder().id(id).user(user).movie(movie).selectedMoviePlan(newPlan).build();
+
+            Purchase existing = Purchase.builder().id(UUID.randomUUID())
+                    .user(user).movie(movie)
+                    .selectedMoviePlan(MoviePlan.builder().type(PlanType.PREMIERE).build())
+                    .purchaseStatus(PurchaseStatus.SUCCESS)
+                    .build();
+
+            when(purchaseRepository.findById(id)).thenReturn(Optional.of(current));
+            when(purchaseRepository.findAllByUserIdAndMovieId(userId, movieId)).thenReturn(List.of(existing));
+
+            purchaseService.setPurchaseSessionResult(id.toString(), PurchaseStatus.SUCCESS);
+
+            verify(purchaseRepository).save(existing);
+            verify(purchaseRepository).delete(current);
+        }
+
+        @Test
+        void shouldSetSuccessIfNoOtherExists() {
+            UUID id = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID movieId = UUID.randomUUID();
+
+            User user = User.builder().id(userId).build();
+            Movie movie = Movie.builder().id(movieId).build();
+            MoviePlan plan = MoviePlan.builder().type(PlanType.WEEK).build();
+
+            Purchase purchase = Purchase.builder().id(id).user(user).movie(movie).selectedMoviePlan(plan).build();
+
+            when(purchaseRepository.findById(id)).thenReturn(Optional.of(purchase));
+            when(purchaseRepository.findAllByUserIdAndMovieId(userId, movieId)).thenReturn(Collections.emptyList());
+
+            purchaseService.setPurchaseSessionResult(id.toString(), PurchaseStatus.SUCCESS);
 
             assertEquals(PurchaseStatus.SUCCESS, purchase.getPurchaseStatus());
             assertNotNull(purchase.getPurchasedAt());
+            assertNotNull(purchase.getExpiresAt());
+
             verify(purchaseRepository).save(purchase);
         }
 
         @Test
-        @DisplayName("Should update status without purchasedAt when FAILED")
-        void shouldSetStatusWithoutPurchasedAtWhenFailed() {
-            UUID purchaseId = UUID.randomUUID();
-            Purchase purchase = new Purchase();
-
-            when(purchaseRepository.findById(purchaseId)).thenReturn(Optional.of(purchase));
-
-            purchaseService.setPurchaseSessionResult(purchaseId.toString(), PurchaseStatus.FAILED);
-
-            assertEquals(PurchaseStatus.FAILED, purchase.getPurchaseStatus());
-            assertNull(purchase.getPurchasedAt());
-            verify(purchaseRepository).save(purchase);
-        }
-
-        @Test
-        @DisplayName("Should throw NotFoundException when purchase not found")
         void shouldThrowWhenPurchaseNotFound() {
-            UUID purchaseId = UUID.randomUUID();
-            when(purchaseRepository.findById(purchaseId)).thenReturn(Optional.empty());
+            UUID id = UUID.randomUUID();
+            when(purchaseRepository.findById(id)).thenReturn(Optional.empty());
 
             assertThrows(NotFoundException.class, () ->
-                    purchaseService.setPurchaseSessionResult(purchaseId.toString(), PurchaseStatus.SUCCESS));
+                    purchaseService.setPurchaseSessionResult(id.toString(), PurchaseStatus.SUCCESS));
         }
     }
 }

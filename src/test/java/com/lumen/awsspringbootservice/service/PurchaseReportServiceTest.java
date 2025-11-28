@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 
 @DisplayName("PurchaseReportServiceImpl Unit Tests")
 @ExtendWith(MockitoExtension.class)
-class PurchaseReportServiceImplTest {
+class PurchaseReportServiceTest {
 
     @Mock
     private PurchaseRepository purchaseRepository;

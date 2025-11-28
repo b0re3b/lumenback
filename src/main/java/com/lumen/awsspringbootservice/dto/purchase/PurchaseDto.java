@@ -1,18 +1,25 @@
 package com.lumen.awsspringbootservice.dto.purchase;
 
-import com.lumen.awsspringbootservice.entity.Movie;
-import com.lumen.awsspringbootservice.entity.User;
+import com.lumen.awsspringbootservice.dto.movie.MovieDto;
 import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.enums.PurchaseStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class PurchaseDto {
     private String id;
 
-    private User user;
+    private String userId;
 
-    private Movie movie;
+    private MovieDto movieDto;
 
     private PlanType selectedPlanType;
 
@@ -21,3 +28,4 @@ public class PurchaseDto {
 
     private PurchaseStatus purchaseStatus;
 }
+

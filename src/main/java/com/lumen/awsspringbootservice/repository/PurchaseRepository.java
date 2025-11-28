@@ -50,4 +50,8 @@ public interface PurchaseRepository extends JpaRepository<Purchase, UUID>, JpaSp
     )
     Page<Genre> findTopGenresOnly(
             Pageable pageable);
+
+    List<Purchase> findAllByUserIdAndMovieId(UUID userId, UUID movieId);
+
+    List<Purchase> findAllByUserId(UUID userId);
 }

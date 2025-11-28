@@ -35,25 +35,25 @@ public class MockPaymentController {
     public ResponseEntity<String> checkout(@RequestParam String sessionId) {
         mockPaymentService.getPaymentSessionById(sessionId);
         String html = """
-            <html>
-              <body style="font-family: sans-serif; text-align:center;">
-                <h2>Mock Payment Gateway</h2>
-                <p>Session: %s</p>
-
-                <form method="POST" action="http://localhost:8080/api/v1/mock/payments/confirm">
-                    <input type="hidden" name="sessionId" value="%s" />
-                    <button type="submit" style="padding:10px 20px; font-size:16px;">Confirm Payment</button>
-                </form>
-                <br><br>
-
-                <form method="POST" action="http://localhost:8080/api/v1/mock/payments/cancel">
-                    <input type="hidden" name="sessionId" value="%s" />
-                    <button type="submit" style="padding:10px 20px; font-size:16px;">Cancel Payment</button>
-                </form>
-
-              </body>
-            </html>
-            """.formatted(sessionId, sessionId, sessionId);
+                <html>
+                  <body style="font-family: sans-serif; text-align:center;">
+                    <h2>Mock Payment Gateway</h2>
+                    <p>Session: %s</p>
+                
+                    <form method="POST" action="http://localhost:8080/api/v1/mock/payments/confirm">
+                        <input type="hidden" name="sessionId" value="%s" />
+                        <button type="submit" style="padding:10px 20px; font-size:16px;">Confirm Payment</button>
+                    </form>
+                    <br><br>
+                
+                    <form method="POST" action="http://localhost:8080/api/v1/mock/payments/cancel">
+                        <input type="hidden" name="sessionId" value="%s" />
+                        <button type="submit" style="padding:10px 20px; font-size:16px;">Cancel Payment</button>
+                    </form>
+                
+                  </body>
+                </html>
+                """.formatted(sessionId, sessionId, sessionId);
         return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
     }
 

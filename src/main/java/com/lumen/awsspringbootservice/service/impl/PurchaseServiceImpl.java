@@ -3,7 +3,10 @@ package com.lumen.awsspringbootservice.service.impl;
 import com.lumen.awsspringbootservice.dto.purchase.PurchaseDto;
 import com.lumen.awsspringbootservice.dto.request.purchase.CreatePaymentSessionRequest;
 import com.lumen.awsspringbootservice.dto.response.purchase.CreatePaymentSessionResponse;
+import com.lumen.awsspringbootservice.entity.Movie;
+import com.lumen.awsspringbootservice.entity.MoviePlan;
 import com.lumen.awsspringbootservice.entity.Purchase;
+import com.lumen.awsspringbootservice.entity.User;
 import com.lumen.awsspringbootservice.enums.PlanType;
 import com.lumen.awsspringbootservice.enums.PurchaseStatus;
 import com.lumen.awsspringbootservice.exception.NotFoundException;
@@ -59,12 +62,21 @@ public class PurchaseServiceImpl implements PurchaseService {
         UUID movieUUID = UUID.fromString(movieId);
         UUID planUUID = UUID.fromString(moviePlanId);
 
+        User user = userRepository.findById(userUUID)
+                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+        Movie movie = movieRepository.findById(movieUUID)
+                .orElseThrow(() -> new NotFoundException("Movie with id " + movieId + " not found"));
+        MoviePlan requestedPlan = moviePlanRepository.findById(planUUID)
+                .orElseThrow(() -> new NotFoundException("MoviePlan with id " + moviePlanId + " not found"));
+
+        PlanType requestedType = requestedPlan.getType();
+
         List<Purchase> pendingPurchases = purchaseRepository
                 .findAllByUserIdAndMovieId(userUUID, movieUUID).stream()
                 .filter(p -> p.getPurchaseStatus() == PurchaseStatus.PENDING)
                 .toList();
 
-        pendingPurchases.forEach(purchaseRepository::delete);
+        purchaseRepository.deleteAll(pendingPurchases);
 
         List<Purchase> existingSuccessfulPurchases = purchaseRepository
                 .findAllByUserIdAndMovieId(userUUID, movieUUID).stream()
@@ -73,40 +85,41 @@ public class PurchaseServiceImpl implements PurchaseService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        for (Purchase p : existingSuccessfulPurchases) {
-            PlanType currentPlan = p.getSelectedMoviePlan().getType();
+        for (Purchase existing : existingSuccessfulPurchases) {
+            PlanType currentPlan = existing.getSelectedMoviePlan().getType();
 
-            boolean isActive = currentPlan == PlanType.FULL || (p.getExpiresAt() != null && p.getExpiresAt().isAfter(now));
+            boolean isExpired = existing.getExpiresAt() != null && existing.getExpiresAt().isBefore(now);
 
-            if (isActive) {
-                PlanType requestedPlan = moviePlanRepository.findById(planUUID)
-                        .orElseThrow(() -> new NotFoundException("MoviePlan with id " + moviePlanId + " not found"))
-                        .getType();
+            if ((currentPlan == PlanType.WEEK || currentPlan == PlanType.MONTH) && isExpired) {
+                purchaseRepository.delete(existing);
+                continue;
+            }
 
-                if (requestedPlan == PlanType.PREMIERE) {
-                    if (currentPlan == PlanType.PREMIERE) {
-                        if (p.getMovie().getPremiereDate().isBefore(now)) {
-                            throw new IllegalStateException("Cannot purchase premiere again after release");
-                        } else {
-                            throw new IllegalStateException("Premiere already purchased");
-                        }
-                    }
+            if (requestedType == PlanType.PREMIERE) {
+                if (currentPlan == PlanType.PREMIERE) {
+                    throw new IllegalStateException("Premiere already purchased");
+                } else {
                     throw new IllegalStateException("Cannot purchase premiere — higher plan already active");
+                }
+            } else {
+
+                if (currentPlan == PlanType.PREMIERE) {
+                    continue;
                 }
 
                 throw new IllegalStateException("Movie is already purchased and still active");
-            } else {
-                purchaseRepository.delete(p);
             }
         }
 
+        if (requestedType == PlanType.PREMIERE && movie.getPremiereDate().isBefore(now)) {
+            throw new IllegalStateException("Cannot purchase premiere after release");
+        }
+
+
         Purchase newPurchase = Purchase.builder()
-                .user(userRepository.findById(userUUID)
-                        .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found")))
-                .movie(movieRepository.findById(movieUUID)
-                        .orElseThrow(() -> new NotFoundException("Movie with id " + movieId + " not found")))
-                .selectedMoviePlan(moviePlanRepository.findById(planUUID)
-                        .orElseThrow(() -> new NotFoundException("MoviePlan with id " + moviePlanId + " not found")))
+                .user(user)
+                .movie(movie)
+                .selectedMoviePlan(requestedPlan)
                 .purchaseStatus(PurchaseStatus.PENDING)
                 .build();
 

@@ -105,8 +105,6 @@ class PurchaseServiceImplTest {
             UUID userId = UUID.randomUUID();
             UUID planId = UUID.randomUUID();
 
-            when(purchaseRepository.findAllByUserIdAndMovieId(userId, movieId))
-                    .thenReturn(Collections.emptyList());
             when(userRepository.findById(userId)).thenReturn(Optional.of(new User()));
             when(movieRepository.findById(movieId)).thenReturn(Optional.empty());
 

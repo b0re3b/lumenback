@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(EmailSendingException.class)
-    public ResponseEntity<ExceptionMessageResponse> handleIllegalArgumentException(EmailSendingException ex) {
+    public ResponseEntity<ExceptionMessageResponse> handleEmailSendingException(EmailSendingException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
